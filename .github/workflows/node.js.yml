@@ -10,22 +10,49 @@ on:
     branches: [ "main" ]
 
 jobs:
+  # El job 'build' original, pero sin el paso 'npm test'
   build:
-
     runs-on: ubuntu-latest
-
+    
+    # Define la matriz para la construcción
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]
+        os: [ubuntu-latest, windows-latest]
+        node-version: [18.x, 20.x, 22.x] # Manteniendo tus versiones originales
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - run: npm ci
-    - run: npm run build --if-present
-    - run: npm test
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build --if-present
+
+  # El nuevo job 'test' que te proporcionaron
+  test:
+    runs-on: ${{ matrix.os }} # El SO es dinámico de la matriz
+    
+    # Depende de que el job 'build' haya terminado
+    needs: build 
+    
+    # Define la matriz para las pruebas (diferente a la de 'build' en este ejemplo)
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node-version: [16.x, 18.x] # Usando las versiones del ejemplo que te dieron
+        
+    steps:
+      - uses: actions/checkout@v3 # Nota: la versión de checkout es diferente
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3 # Nota: la versión de setup-node es diferente
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: npm install, and test
+        run: |
+          npm install
+          npm test
+        env:
+          CI: true
